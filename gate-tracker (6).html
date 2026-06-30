@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GATE CS / DA — Daily & Subject Tracker</title>
+
+<!-- App Icon / Favicon (inline SVG, no external file needed) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234f6df5'/%3E%3Cpath d='M55 15 L30 55 L48 55 L42 85 L72 42 L52 42 Z' fill='white'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Inter"', "system-ui", "sans-serif"],
+          mono: ['"IBM Plex Mono"', "monospace"],
+        },
+        colors: {
+          border: "var(--border)",
+          input: "var(--input)",
+          ring: "var(--ring)",
+          background: "var(--background)",
+          foreground: "var(--foreground)",
+          primary: { DEFAULT: "var(--primary)", foreground: "var(--primary-foreground)" },
+          secondary: { DEFAULT: "var(--secondary)", foreground: "var(--secondary-foreground)" },
+          destructive: { DEFAULT: "var(--destructive)", foreground: "var(--destructive-foreground)" },
+          muted: { DEFAULT: "var(--muted)", foreground: "var(--muted-foreground)" },
+          accent: { DEFAULT: "var(--accent)", foreground: "var(--accent-foreground)" },
+          card: { DEFAULT: "var(--card)", foreground: "var(--card-foreground)" },
+          success: { DEFAULT: "var(--success)", foreground: "var(--success-foreground)" },
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+      },
+    },
+  };
+</script>
+
+<style type="text/tailwindcss">
+  @layer base {
+    :root {
+      --background: #f4f6fb; --foreground: #1a2030; --card: #ffffff; --card-foreground: #1a2030;
+      --primary: #4f6df5; --primary-foreground: #ffffff; --secondary: #eef1f8; --secondary-foreground: #404a61;
+      --muted: #eef1f8; --muted-foreground: #6b7387; --accent: #eef2ff; --accent-foreground: #4f6df5;
+      --destructive: #e5484d; --destructive-foreground: #ffffff; --success: #16a34a; --success-foreground: #ffffff;
+      --border: #e2e6f0; --input: #e2e6f0; --ring: #4f6df5; --radius: 0.75rem;
+    }
+    .dark {
+      --background: #0b0e16; --foreground: #e6e9f2; --card: #131726; --card-foreground: #e6e9f2;
+      --primary: #7c93ff; --primary-foreground: #0b0e16; --secondary: #1b2032; --secondary-foreground: #c4cae0;
+      --muted: #1b2032; --muted-foreground: #8c93ab; --accent: #1c2440; --accent-foreground: #7c93ff;
+      --destructive: #ff6166; --destructive-foreground: #0b0e16; --success: #34d066; --success-foreground: #0b0e16;
+      --border: #232a3f; --input: #232a3f; --ring: #7c93ff;
+    }
+    body { background-color: var(--background); color: var(--foreground); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+</style>
+</head>
+
+<body class="font-sans min-h-screen transition-colors duration-300">
+<div class="max-w-3xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-10">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-2.5">
+      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+        <i data-lucide="zap" class="w-5 h-5 text-primary"></i>
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-extrabold tracking-tight">GATE Daily Tracker</h1>
+        <p class="text-xs text-muted-foreground font-mono" id="todayDate"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="hidden sm:flex flex-col items-end bg-card border border-border rounded-xl px-3.5 py-2 shadow-sm">
+        <span class="text-base font-extrabold font-mono tracking-wide text-primary leading-none" id="liveClock">--:--:--</span>
+        <span class="text-[10px] text-muted-foreground font-mono mt-1">IST · Asia/Kolkata</span>
+      </div>
+      <button id="themeToggle" type="button" title="Toggle dark / light mode" class="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-secondary transition-colors">
+        <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile live clock (shown only on small screens, below header) -->
+  <div class="sm:hidden flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2.5 mb-6 shadow-sm">
+    <span class="text-xs text-muted-foreground font-mono">IST · Asia/Kolkata</span>
+    <span class="text-base font-extrabold font-mono tracking-wide text-primary" id="liveClockMobile">--:--:--</span>
+  </div>
+
+  <!-- Exam Toggle -->
+  <div class="flex items-center gap-2 bg-card border border-border rounded-xl p-1.5 mb-6 shadow-sm">
+    <button data-exam="CS" type="button" class="exam-tab flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
+      <i data-lucide="cpu" class="w-4 h-4"></i> GATE CS
+    </button>
+    <button data-exam="DA" type="button" class="exam-tab flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
+      <i data-lucide="brain-circuit" class="w-4 h-4"></i> GATE DA
+    </button>
+  </div>
+
+  <!-- Stat Summary Cards -->
+  <div class="grid grid-cols-3 gap-3 lg:gap-4 mb-6">
+    <div class="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm">
+      <p class="text-[11px] sm:text-xs text-muted-foreground font-medium mb-1">Total Tasks</p>
+      <p class="text-xl sm:text-2xl font-extrabold font-mono" id="statTotal">0</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm">
+      <p class="text-[11px] sm:text-xs text-muted-foreground font-medium mb-1">Daily Progress</p>
+      <p class="text-xl sm:text-2xl font-extrabold font-mono text-primary" id="statProgress">0%</p>
+    </div>
+    <div class="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm">
+      <p class="text-[11px] sm:text-xs text-muted-foreground font-medium mb-1">Streak</p>
+      <p class="text-xl sm:text-2xl font-extrabold font-mono text-success flex items-center gap-1">
+        <i data-lucide="flame" class="w-4 h-4 sm:w-5 sm:h-5"></i><span id="statStreak">0</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Daily Progress bar -->
+  <div class="bg-card border border-border rounded-xl p-4 sm:p-5 mb-8 shadow-sm">
+    <div class="flex justify-between items-center mb-2.5">
+      <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Today's Overall Progress</span>
+      <span class="text-sm font-bold font-mono" id="barPercent">0%</span>
+    </div>
+    <div class="w-full h-3 rounded-full bg-muted overflow-hidden">
+      <div id="barFill" class="h-full rounded-full bg-gradient-to-r from-primary to-success transition-all duration-500" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Core Tasks -->
+  <div class="mb-8">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+      <i data-lucide="list-checks" class="w-4 h-4"></i> Core Daily Tasks
+    </h2>
+    <div id="coreTaskList" class="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 md:items-start"></div>
+  </div>
+
+  <!-- Custom Tasks -->
+  <div class="mb-10">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+      <i data-lucide="sparkles" class="w-4 h-4"></i> Custom Tasks
+    </h2>
+    <div id="customTaskList" class="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-2 md:items-start mb-3"></div>
+    <form id="customTaskForm" class="flex gap-2">
+      <input id="customTaskInput" type="text" placeholder="e.g. Mock Test 1"
+        class="flex-1 bg-card border border-border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground" />
+      <button type="submit" class="bg-primary text-primary-foreground rounded-lg px-4 py-2.5 text-sm font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+        <i data-lucide="plus" class="w-4 h-4"></i> Add
+      </button>
+    </form>
+  </div>
+
+  <!-- Reset -->
+  <div class="flex gap-3 mb-10">
+    <button id="resetBtn" type="button" class="flex-1 bg-card border border-destructive/40 text-destructive rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-destructive hover:text-destructive-foreground transition-colors">
+      <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Day
+    </button>
+  </div>
+
+  <!-- Subject-wise Tracker -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+        <i data-lucide="library" class="w-4 h-4"></i> Subject-wise Syllabus Tracker
+      </h2>
+      <span class="text-xs font-mono font-semibold text-primary" id="subjectOverallPct">0%</span>
+    </div>
+    <div class="w-full h-2.5 rounded-full bg-muted overflow-hidden mb-4">
+      <div id="subjectOverallBar" class="h-full rounded-full bg-gradient-to-r from-primary to-success transition-all duration-500" style="width:0%"></div>
+    </div>
+    <div id="subjectList" class="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start"></div>
+  </div>
+
+  <!-- History trigger button -->
+  <div class="mb-6">
+    <button id="openHistoryBtn" type="button" class="w-full bg-card border border-border rounded-xl px-4 py-3.5 flex items-center justify-between shadow-sm hover:border-primary/50 transition-colors group">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <i data-lucide="calendar-clock" class="w-4.5 h-4.5 text-primary"></i>
+        </div>
+        <div class="text-left">
+          <p class="text-sm font-semibold">View Daily History</p>
+          <p class="text-xs text-muted-foreground" id="historyPreviewLabel">See your past tracked days</p>
+        </div>
+      </div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform"></i>
+    </button>
+  </div>
+
+  <p class="text-center text-xs text-muted-foreground mt-8 font-mono" id="lastResetNote"></p>
+</div>
+
+<!-- Daily History Panel (slide-in modal) -->
+<div id="historyModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-card border border-border sm:rounded-2xl rounded-t-2xl shadow-xl w-full sm:max-w-lg lg:max-w-xl max-h-[85vh] flex flex-col animate-[slideUp_0.25s_ease]">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+      <div class="flex items-center gap-2.5">
+        <i data-lucide="calendar-clock" class="w-5 h-5 text-primary"></i>
+        <h3 class="text-base font-bold" id="historyModalTitle">Daily History — GATE CS</h3>
+      </div>
+      <button id="closeHistoryBtn" type="button" class="text-muted-foreground hover:text-foreground transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="px-5 py-4 overflow-y-auto scrollbar-thin flex-1">
+      <div id="historyList" class="space-y-2"></div>
+    </div>
+    <div class="px-5 py-3.5 border-t border-border shrink-0">
+      <button id="clearHistoryBtn" type="button" class="w-full text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center gap-1.5 py-2">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear History
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Motivational Quote Modal -->
+<div id="quoteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+  <div class="bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 sm:p-7 text-center relative animate-[fadeIn_0.25s_ease]">
+    <button id="quoteModalClose" type="button" class="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+      <i data-lucide="party-popper" class="w-6 h-6 text-success"></i>
+    </div>
+    <p class="text-xs font-bold uppercase tracking-wider text-success mb-3">All Tasks Completed!</p>
+    <p class="text-base sm:text-lg font-semibold leading-relaxed mb-3" id="quoteText">"..."</p>
+    <p class="text-sm text-muted-foreground font-mono" id="quoteAuthor">— Unknown</p>
+    <button id="quoteModalOk" type="button" class="mt-6 w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
+      Keep Going 🔥
+    </button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   GLOBAL CONSTANTS (must be defined before any function below
+   that references them runs, since const has no hoisting)
+========================================================= */
+const IST_TIMEZONE = "Asia/Kolkata";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+const CORE_TASK_DEFS = [
+  { id: "revision",  icon: "book-open",    label: "Today's Revision",    targetMinutes: 60  }, // default target, user-editable
+  { id: "practice",  icon: "pencil-line",  label: "Practice Questions",  targetMinutes: 120 },
+  { id: "lecture",   icon: "clapperboard", label: "Lecture",             targetMinutes: 180 },
+  { id: "pyqs",      icon: "file-text",    label: "PYQs (Past Year Qs)", targetMinutes: 60  },
+  { id: "aptitude",  icon: "calculator",   label: "Aptitude",            targetMinutes: 45  },
+];
+
+const SYLLABUS = {
+  CS: {
+    "Engineering Mathematics": ["Discrete Math", "Linear Algebra", "Calculus", "Probability & Statistics"],
+    "Digital Logic": ["Boolean Algebra", "Combinational Circuits", "Sequential Circuits", "Number Representation"],
+    "Computer Organization & Architecture": ["Machine Instructions", "ALU & Datapath", "Pipelining", "Memory Hierarchy", "I/O Interface"],
+    "Programming & Data Structures": ["C Programming", "Arrays & Stacks", "Trees & Graphs", "Linked Lists", "Recursion"],
+    "Algorithms": ["Asymptotic Analysis", "Sorting & Searching", "Greedy Algorithms", "DP", "Graph Algorithms"],
+    "Theory of Computation": ["Regular Languages & FA", "Context-Free Languages & PDA", "Turing Machines", "Undecidability"],
+    "Compiler Design": ["Lexical Analysis", "Parsing", "Syntax-Directed Translation", "Code Optimization"],
+    "Operating Systems": ["Processes & Threads", "Scheduling", "Synchronization", "Memory Management", "File Systems"],
+    "Databases": ["ER Model", "Relational Algebra", "SQL", "Normalization", "Transactions & Concurrency"],
+    "Computer Networks": ["OSI/TCP-IP Layers", "Routing", "Congestion Control", "Application Layer Protocols"],
+  },
+  DA: {
+    "Linear Algebra": ["Matrices & Determinants", "Eigenvalues/Eigenvectors", "Vector Spaces", "System of Equations"],
+    "Calculus & Optimization": ["Limits & Continuity", "Gradient & Hessian", "Convex Optimization", "Lagrange Multipliers"],
+    "Probability & Statistics": ["Random Variables", "Distributions", "Hypothesis Testing", "Bayesian Inference"],
+    "Programming, DS & Algorithms": ["Python Programming", "Data Structures", "Sorting & Searching", "Complexity Analysis"],
+    "Database Management & Warehousing": ["SQL", "Normalization", "ETL Concepts", "OLAP vs OLTP"],
+    "Machine Learning": ["Regression", "Classification", "Clustering", "SVM & Decision Trees", "Model Evaluation"],
+    "AI": ["Search Algorithms", "Knowledge Representation", "Logic & Reasoning", "Neural Network Basics"],
+    "Deep Learning": ["Feedforward Networks", "CNNs", "RNNs/LSTMs", "Backpropagation"],
+    "Data Science Tools": ["Pandas/Numpy", "Data Visualization", "Feature Engineering", "Data Cleaning"],
+  },
+};
+
+const EXAMS = ["CS", "DA"];
+let currentExam = "CS";
+
+/* =========================================================
+   STATE
+========================================================= */
+function dailyKey(exam)   { return `gateTracker_daily_${exam}`; }
+function subjectKey(exam) { return `gateTracker_subjects_${exam}`; }
+
+function defaultDailyState() {
+  const core = {};
+  CORE_TASK_DEFS.forEach(t => { core[t.id] = { minutes: 0 }; });
+  return { core, custom: [], streak: 0, lastCompletedDate: null, lastResetAt: null, activeDate: todayStrIST() };
+}
+
+function loadDailyState(exam) {
+  try {
+    const raw = localStorage.getItem(dailyKey(exam));
+    const base = defaultDailyState();
+    if (!raw) return base;
+    const parsed = JSON.parse(raw);
+    return {
+      core: Object.assign(base.core, parsed.core || {}),
+      custom: Array.isArray(parsed.custom) ? parsed.custom : [],
+      streak: typeof parsed.streak === "number" ? parsed.streak : 0,
+      lastCompletedDate: parsed.lastCompletedDate || null,
+      lastResetAt: parsed.lastResetAt || null,
+      activeDate: parsed.activeDate || base.activeDate,
+    };
+  } catch (e) { return defaultDailyState(); }
+}
+
+function saveDailyState(exam, state) {
+  localStorage.setItem(dailyKey(exam), JSON.stringify(state));
+}
+
+function defaultSubjectState(exam) {
+  const data = {};
+  Object.entries(SYLLABUS[exam]).forEach(([subject, topics]) => {
+    data[subject] = topics.map(() => false);
+  });
+  return data;
+}
+
+function loadSubjectState(exam) {
+  try {
+    const raw = localStorage.getItem(subjectKey(exam));
+    const base = defaultSubjectState(exam);
+    if (!raw) return base;
+    const parsed = JSON.parse(raw);
+    Object.keys(base).forEach(subject => {
+      if (Array.isArray(parsed[subject])) {
+        base[subject] = base[subject].map((v, i) => parsed[subject][i] ?? v);
+      }
+    });
+    return base;
+  } catch (e) { return defaultSubjectState(exam); }
+}
+
+function saveSubjectState(exam, data) {
+  localStorage.setItem(subjectKey(exam), JSON.stringify(data));
+}
+
+/* ---------------------------------------------------------
+   EDITABLE TARGETS — each core task's target minutes can be
+   customized per exam and persists independently of daily resets.
+--------------------------------------------------------- */
+function targetKey(exam) { return `gateTracker_targets_${exam}`; }
+
+function defaultTargets() {
+  const t = {};
+  CORE_TASK_DEFS.forEach(def => { t[def.id] = def.targetMinutes; });
+  return t;
+}
+
+function loadTargets(exam) {
+  try {
+    const raw = localStorage.getItem(targetKey(exam));
+    const base = defaultTargets();
+    if (!raw) return base;
+    const parsed = JSON.parse(raw);
+    Object.keys(base).forEach(id => {
+      if (typeof parsed[id] === "number" && parsed[id] > 0) base[id] = parsed[id];
+    });
+    return base;
+  } catch (e) { return defaultTargets(); }
+}
+
+function saveTargets(exam, data) {
+  localStorage.setItem(targetKey(exam), JSON.stringify(data));
+}
+
+let targetState = loadTargets(currentExam);
+
+function getTarget(id) {
+  return targetState[id] || CORE_TASK_DEFS.find(d => d.id === id)?.targetMinutes || 1;
+}
+
+/* ---------------------------------------------------------
+   DAILY HISTORY — separate "folder" (its own localStorage key)
+   storing a snapshot of every completed/passed day per exam.
+--------------------------------------------------------- */
+function historyKey(exam) { return `gateTracker_history_${exam}`; }
+
+function loadHistory(exam) {
+  try {
+    const raw = localStorage.getItem(historyKey(exam));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+function saveHistory(exam, historyArr) {
+  // keep most recent 120 days to avoid unbounded growth
+  const trimmed = historyArr.slice(-120);
+  localStorage.setItem(historyKey(exam), JSON.stringify(trimmed));
+}
+
+function buildHistorySnapshot(exam, snapshotState) {
+  const totalTargetMinutes = CORE_TASK_DEFS.reduce((s, t) => s + getTarget(t.id), 0);
+  const loggedMinutes = CORE_TASK_DEFS.reduce((s, t) => s + Math.min(snapshotState.core[t.id]?.minutes || 0, getTarget(t.id)), 0);
+  const coreFraction = totalTargetMinutes ? (loggedMinutes / totalTargetMinutes) : 0;
+  const customTotal = snapshotState.custom.length;
+  const customDone = snapshotState.custom.filter(t => t.done).length;
+  const customFraction = customTotal ? (customDone / customTotal) : null;
+  let overallFraction;
+  if (customFraction === null) overallFraction = coreFraction;
+  else {
+    const coreCount = CORE_TASK_DEFS.length;
+    overallFraction = ((coreFraction * coreCount) + (customFraction * customTotal)) / (coreCount + customTotal);
+  }
+  return {
+    date: snapshotState.activeDate,
+    pct: Math.round(overallFraction * 100),
+    loggedMinutes,
+    totalTargetMinutes,
+    customDone,
+    customTotal,
+    allDone: snapshotState.lastCompletedDate === snapshotState.activeDate,
+  };
+}
+
+// If the stored daily state belongs to a previous calendar day (IST), archive it into
+// history, then start a fresh day (core minutes + custom tasks reset, streak preserved).
+function archiveDayIfRolledOver(exam, state) {
+  const today = todayStrIST();
+  if (state.activeDate === today) return state;
+
+  const hasAnyData = Object.values(state.core).some(c => c.minutes > 0) || state.custom.length > 0;
+  if (hasAnyData) {
+    const snapshot = buildHistorySnapshot(exam, state);
+    const history = loadHistory(exam);
+    history.push(snapshot);
+    saveHistory(exam, history);
+  }
+
+  CORE_TASK_DEFS.forEach(t => { state.core[t.id] = { minutes: 0 }; });
+  state.custom = [];
+  state.activeDate = today;
+  saveDailyState(exam, state);
+  return state;
+}
+
+let dailyState = loadDailyState(currentExam);
+let subjectState = loadSubjectState(currentExam);
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatMinutes(m) {
+  if (m % 60 === 0) return (m/60) + "h";
+  if (m < 60) return m + "m";
+  return Math.floor(m/60) + "h " + (m%60) + "m";
+}
+
+/* =========================================================
+   RENDER: CORE TASKS  (event delegation — fixes click bug)
+========================================================= */
+const coreTaskList = document.getElementById("coreTaskList");
+
+function renderCoreTasks() {
+  coreTaskList.innerHTML = "";
+  CORE_TASK_DEFS.forEach(def => {
+    const entry = dailyState.core[def.id] || { minutes: 0 };
+    const target = getTarget(def.id);
+    const pct = Math.min(100, Math.round((entry.minutes / target) * 100)) || 0;
+    const isComplete = entry.minutes >= target;
+
+    const row = document.createElement("div");
+    row.dataset.taskId = def.id;
+    row.className = `bg-card border rounded-xl p-3.5 sm:p-4 shadow-sm transition-colors ${isComplete ? "border-success/50" : "border-border"}`;
+    row.innerHTML = `
+      <div class="flex items-start gap-3">
+        <button type="button" data-action="toggle-core" data-id="${def.id}" class="mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isComplete ? "bg-success border-success" : "border-border"}">
+          ${isComplete ? '<i data-lucide="check" class="w-4 h-4 text-success-foreground"></i>' : ""}
+        </button>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <i data-lucide="${def.icon}" class="w-4 h-4 text-primary shrink-0"></i>
+              <span class="task-label font-semibold text-sm sm:text-[15px] ${isComplete ? "line-through text-muted-foreground" : ""}">${def.label}</span>
+            </div>
+            <button type="button" data-action="edit-target" data-id="${def.id}" class="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-primary transition-colors group">
+              <span class="task-target">Target: ${formatMinutes(target)}</span>
+              <i data-lucide="pencil" class="w-3 h-3 opacity-50 group-hover:opacity-100"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 mt-2.5">
+            <input type="number" min="0" data-action="minutes-input" data-id="${def.id}" value="${entry.minutes || ""}" placeholder="0"
+              class="w-20 bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring" />
+            <span class="text-xs text-muted-foreground">min logged</span>
+            <div class="flex-1"></div>
+            <span class="task-pct text-xs font-mono font-semibold ${isComplete ? "text-success" : "text-muted-foreground"}">${pct}%</span>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-muted overflow-hidden mt-2">
+            <div class="task-bar h-full rounded-full ${isComplete ? "bg-success" : "bg-primary"} transition-all duration-300" style="width:${pct}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    coreTaskList.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+function refreshCoreRow(id) {
+  const def = CORE_TASK_DEFS.find(t => t.id === id);
+  const entry = dailyState.core[id];
+  const target = getTarget(id);
+  const pct = Math.min(100, Math.round((entry.minutes / target) * 100)) || 0;
+  const isComplete = entry.minutes >= target;
+  const row = coreTaskList.querySelector(`[data-task-id="${id}"]`);
+  if (!row) return;
+  row.className = `bg-card border rounded-xl p-3.5 sm:p-4 shadow-sm transition-colors ${isComplete ? "border-success/50" : "border-border"}`;
+  const btn = row.querySelector('[data-action="toggle-core"]');
+  btn.className = `mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isComplete ? "bg-success border-success" : "border-border"}`;
+  btn.innerHTML = isComplete ? '<i data-lucide="check" class="w-4 h-4 text-success-foreground"></i>' : "";
+  row.querySelector(".task-label").className = `task-label font-semibold text-sm sm:text-[15px] ${isComplete ? "line-through text-muted-foreground" : ""}`;
+  row.querySelector(".task-target").textContent = `Target: ${formatMinutes(target)}`;
+  row.querySelector(".task-pct").textContent = pct + "%";
+  row.querySelector(".task-pct").className = `task-pct text-xs font-mono font-semibold ${isComplete ? "text-success" : "text-muted-foreground"}`;
+  row.querySelector(".task-bar").style.width = pct + "%";
+  row.querySelector(".task-bar").className = `task-bar h-full rounded-full ${isComplete ? "bg-success" : "bg-primary"} transition-all duration-300`;
+  lucide.createIcons();
+}
+
+coreTaskList.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest('[data-action="toggle-core"]');
+  const editBtn = e.target.closest('[data-action="edit-target"]');
+
+  if (toggleBtn) {
+    const id = toggleBtn.getAttribute("data-id");
+    const target = getTarget(id);
+    const entry = dailyState.core[id];
+    entry.minutes = entry.minutes >= target ? 0 : target;
+    saveDailyState(currentExam, dailyState);
+    refreshCoreRow(id);
+    updateStats();
+    return;
+  }
+
+  if (editBtn) {
+    const id = editBtn.getAttribute("data-id");
+    const def = CORE_TASK_DEFS.find(t => t.id === id);
+    const current = getTarget(id);
+    const input = prompt(`Set new target (in minutes) for "${def.label}":`, String(current));
+    if (input === null) return; // cancelled
+    const val = parseInt(input, 10);
+    if (!Number.isFinite(val) || val <= 0) {
+      alert("Please enter a valid number of minutes greater than 0.");
+      return;
+    }
+    targetState[id] = val;
+    saveTargets(currentExam, targetState);
+    refreshCoreRow(id);
+    updateStats();
+  }
+});
+
+coreTaskList.addEventListener("input", (e) => {
+  const input = e.target.closest('[data-action="minutes-input"]');
+  if (!input) return;
+  const id = input.getAttribute("data-id");
+  const val = Math.max(0, parseInt(input.value, 10) || 0);
+  dailyState.core[id].minutes = val;
+  saveDailyState(currentExam, dailyState);
+  refreshCoreRow(id);
+  updateStats();
+});
+
+/* =========================================================
+   RENDER: CUSTOM TASKS (event delegation)
+========================================================= */
+const customTaskList = document.getElementById("customTaskList");
+const customTaskForm = document.getElementById("customTaskForm");
+const customTaskInput = document.getElementById("customTaskInput");
+
+function renderCustomTasks() {
+  customTaskList.innerHTML = "";
+  if (dailyState.custom.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "text-xs text-muted-foreground italic px-1 md:col-span-2";
+    empty.textContent = "No custom tasks yet — add one below.";
+    customTaskList.appendChild(empty);
+    return;
+  }
+  dailyState.custom.forEach(task => {
+    const row = document.createElement("div");
+    row.className = `flex items-center gap-3 bg-card border rounded-xl px-3.5 py-2.5 shadow-sm transition-colors ${task.done ? "border-success/50" : "border-border"}`;
+    row.innerHTML = `
+      <button type="button" data-action="toggle-custom" data-id="${task.id}" class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${task.done ? "bg-success border-success" : "border-border"}">
+        ${task.done ? '<i data-lucide="check" class="w-3.5 h-3.5 text-success-foreground"></i>' : ""}
+      </button>
+      <span class="flex-1 text-sm font-medium ${task.done ? "line-through text-muted-foreground" : ""}">${escapeHtml(task.label)}</span>
+      <button type="button" data-action="delete-custom" data-id="${task.id}" class="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    `;
+    customTaskList.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+customTaskList.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest('[data-action="toggle-custom"]');
+  const deleteBtn = e.target.closest('[data-action="delete-custom"]');
+  if (toggleBtn) {
+    const id = toggleBtn.getAttribute("data-id");
+    const task = dailyState.custom.find(t => t.id === id);
+    if (task) task.done = !task.done;
+    saveDailyState(currentExam, dailyState);
+    renderCustomTasks();
+    updateStats();
+  } else if (deleteBtn) {
+    const id = deleteBtn.getAttribute("data-id");
+    dailyState.custom = dailyState.custom.filter(t => t.id !== id);
+    saveDailyState(currentExam, dailyState);
+    renderCustomTasks();
+    updateStats();
+  }
+});
+
+customTaskForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const label = customTaskInput.value.trim();
+  if (!label) return;
+  dailyState.custom.push({ id: "c" + Date.now() + Math.random().toString(36).slice(2,6), label, done: false });
+  customTaskInput.value = "";
+  saveDailyState(currentExam, dailyState);
+  renderCustomTasks();
+  updateStats();
+});
+
+/* =========================================================
+   RENDER: SUBJECT-WISE TRACKER (event delegation)
+========================================================= */
+const subjectList = document.getElementById("subjectList");
+
+function renderSubjects() {
+  subjectList.innerHTML = "";
+  const subjects = SYLLABUS[currentExam];
+
+  Object.entries(subjects).forEach(([subject, topics]) => {
+    const checks = subjectState[subject] || topics.map(() => false);
+    const doneCount = checks.filter(Boolean).length;
+    const pct = topics.length ? Math.round((doneCount / topics.length) * 100) : 0;
+
+    const card = document.createElement("div");
+    card.className = "bg-card border border-border rounded-xl overflow-hidden shadow-sm";
+    card.dataset.subject = subject;
+
+    const topicsHtml = topics.map((topic, i) => `
+      <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/60 cursor-pointer transition-colors">
+        <button type="button" data-action="toggle-topic" data-subject="${encodeURIComponent(subject)}" data-index="${i}"
+          class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${checks[i] ? "bg-success border-success" : "border-border"}">
+          ${checks[i] ? '<i data-lucide="check" class="w-3.5 h-3.5 text-success-foreground"></i>' : ""}
+        </button>
+        <span class="text-sm ${checks[i] ? "line-through text-muted-foreground" : ""}">${escapeHtml(topic)}</span>
+      </label>
+    `).join("");
+
+    card.innerHTML = `
+      <button type="button" data-action="toggle-subject-open" class="w-full flex items-center justify-between px-4 py-3.5 text-left">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <i data-lucide="chevron-right" class="subject-chevron w-4 h-4 text-muted-foreground transition-transform shrink-0"></i>
+          <span class="font-semibold text-sm sm:text-[15px] truncate">${escapeHtml(subject)}</span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-xs font-mono text-muted-foreground">${doneCount}/${topics.length}</span>
+          <span class="text-xs font-mono font-semibold ${pct === 100 ? "text-success" : "text-primary"}">${pct}%</span>
+        </div>
+      </button>
+      <div class="w-full h-1 bg-muted overflow-hidden">
+        <div class="h-full ${pct === 100 ? "bg-success" : "bg-primary"} transition-all duration-300" style="width:${pct}%"></div>
+      </div>
+      <div class="subject-topics hidden border-t border-border divide-y divide-border">
+        ${topicsHtml}
+      </div>
+    `;
+    subjectList.appendChild(card);
+  });
+  lucide.createIcons();
+  updateSubjectOverall();
+}
+
+function refreshSubjectCard(subject) {
+  const topics = SYLLABUS[currentExam][subject];
+  const checks = subjectState[subject];
+  const doneCount = checks.filter(Boolean).length;
+  const pct = topics.length ? Math.round((doneCount / topics.length) * 100) : 0;
+  const card = subjectList.querySelector(`[data-subject="${CSS.escape(subject)}"]`);
+  if (!card) return;
+
+  card.querySelectorAll('[data-action="toggle-topic"]').forEach((btn, i) => {
+    const checked = checks[i];
+    btn.className = `w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "bg-success border-success" : "border-border"}`;
+    btn.innerHTML = checked ? '<i data-lucide="check" class="w-3.5 h-3.5 text-success-foreground"></i>' : "";
+    const label = btn.nextElementSibling;
+    label.className = `text-sm ${checked ? "line-through text-muted-foreground" : ""}`;
+  });
+
+  const countLabel = card.querySelector(".font-mono.text-muted-foreground");
+  if (countLabel) countLabel.textContent = `${doneCount}/${topics.length}`;
+  const pctLabel = card.querySelectorAll(".font-mono")[1];
+  if (pctLabel) {
+    pctLabel.textContent = pct + "%";
+    pctLabel.className = `text-xs font-mono font-semibold ${pct === 100 ? "text-success" : "text-primary"}`;
+  }
+  const bar = card.querySelector(".h-1 > div");
+  if (bar) {
+    bar.style.width = pct + "%";
+    bar.className = `h-full ${pct === 100 ? "bg-success" : "bg-primary"} transition-all duration-300`;
+  }
+  lucide.createIcons();
+}
+
+subjectList.addEventListener("click", (e) => {
+  const topicBtn = e.target.closest('[data-action="toggle-topic"]');
+  const openBtn = e.target.closest('[data-action="toggle-subject-open"]');
+
+  if (topicBtn) {
+    const subject = decodeURIComponent(topicBtn.getAttribute("data-subject"));
+    const index = parseInt(topicBtn.getAttribute("data-index"), 10);
+    subjectState[subject][index] = !subjectState[subject][index];
+    saveSubjectState(currentExam, subjectState);
+    refreshSubjectCard(subject);
+    updateSubjectOverall();
+    return;
+  }
+  if (openBtn) {
+    const card = openBtn.closest("[data-subject]");
+    const panel = card.querySelector(".subject-topics");
+    const chevron = card.querySelector(".subject-chevron");
+    panel.classList.toggle("hidden");
+    chevron.style.transform = panel.classList.contains("hidden") ? "rotate(0deg)" : "rotate(90deg)";
+  }
+});
+
+function updateSubjectOverall() {
+  const subjects = SYLLABUS[currentExam];
+  let totalTopics = 0, doneTopics = 0;
+  Object.entries(subjects).forEach(([subject, topics]) => {
+    totalTopics += topics.length;
+    doneTopics += (subjectState[subject] || []).filter(Boolean).length;
+  });
+  const pct = totalTopics ? Math.round((doneTopics / totalTopics) * 100) : 0;
+  document.getElementById("subjectOverallPct").textContent = pct + "%";
+  document.getElementById("subjectOverallBar").style.width = pct + "%";
+}
+
+/* =========================================================
+   MOTIVATIONAL QUOTES
+========================================================= */
+const MOTIVATIONAL_QUOTES = [
+  { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Consistency is what transforms average into excellence.", author: "Unknown" },
+  { text: "The pain of discipline is far less than the pain of regret.", author: "Unknown" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "A little progress each day adds up to big results.", author: "Unknown" },
+  { text: "Hard work beats talent when talent doesn't work hard.", author: "Tim Notke" },
+  { text: "Your future is created by what you do today, not tomorrow.", author: "Robert Kiyosaki" },
+  { text: "Push yourself, because no one else is going to do it for you.", author: "Unknown" },
+  { text: "Great things never come from comfort zones.", author: "Unknown" },
+  { text: "Dream it. Wish it. Do it.", author: "Unknown" },
+  { text: "Success doesn't just find you. You have to go out and get it.", author: "Unknown" },
+  { text: "The harder you work for something, the greater you'll feel when you achieve it.", author: "Unknown" },
+  { text: "Don't stop when you're tired. Stop when you're done.", author: "Unknown" },
+  { text: "Wake up with determination. Go to bed with satisfaction.", author: "Unknown" },
+  { text: "Do something today that your future self will thank you for.", author: "Sean Patrick Flanery" },
+  { text: "Little by little, a little becomes a lot.", author: "Tanzanian Proverb" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "What seems impossible today will one day become your warm-up.", author: "Unknown" },
+  { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+  { text: "Energy and persistence conquer all things.", author: "Benjamin Franklin" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "Strive for progress, not perfection.", author: "Unknown" },
+  { text: "Today's accomplishments were yesterday's impossibilities.", author: "Robert H. Schuller" },
+  { text: "Stay consistent. Every rank, every score starts with a single day like today.", author: "Unknown" },
+  { text: "Focus on being productive instead of busy.", author: "Tim Ferriss" },
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+  { text: "GATE is a marathon, not a sprint — and you just ran today's mile.", author: "Unknown" },
+  { text: "Your only limit is the one you set for yourself.", author: "Unknown" },
+  { text: "One more day done. One step closer to your AIR.", author: "Unknown" },
+  { text: "Whatever you are, be a good one.", author: "Abraham Lincoln" },
+  { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
+];
+
+function getRandomQuote() {
+  const lastIndexRaw = localStorage.getItem("gateTracker_lastQuoteIndex");
+  const lastIndex = lastIndexRaw !== null ? parseInt(lastIndexRaw, 10) : -1;
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+  } while (idx === lastIndex && MOTIVATIONAL_QUOTES.length > 1);
+  localStorage.setItem("gateTracker_lastQuoteIndex", String(idx));
+  return MOTIVATIONAL_QUOTES[idx];
+}
+
+const quoteModal = document.getElementById("quoteModal");
+
+function showMotivationalQuote() {
+  const quote = getRandomQuote();
+  document.getElementById("quoteText").textContent = `"${quote.text}"`;
+  document.getElementById("quoteAuthor").textContent = `— ${quote.author}`;
+  quoteModal.classList.remove("hidden");
+  quoteModal.classList.add("flex");
+  lucide.createIcons();
+}
+
+function hideMotivationalQuote() {
+  quoteModal.classList.add("hidden");
+  quoteModal.classList.remove("flex");
+}
+
+document.getElementById("quoteModalClose").addEventListener("click", hideMotivationalQuote);
+document.getElementById("quoteModalOk").addEventListener("click", hideMotivationalQuote);
+quoteModal.addEventListener("click", (e) => { if (e.target === quoteModal) hideMotivationalQuote(); });
+
+/* =========================================================
+   RENDER: DAILY HISTORY
+========================================================= */
+const historyList = document.getElementById("historyList");
+
+function formatHistoryDate(dateStr) {
+  // dateStr is "YYYY-MM-DD" (IST calendar day)
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.toLocaleDateString("en-IN", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
+
+function renderHistory() {
+  const history = loadHistory(currentExam).slice().reverse(); // newest first
+  historyList.innerHTML = "";
+
+  if (history.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "text-xs text-muted-foreground italic px-1";
+    empty.textContent = "No past days recorded yet — history builds up automatically as days roll over.";
+    historyList.appendChild(empty);
+    return;
+  }
+
+  history.forEach(entry => {
+    const row = document.createElement("div");
+    row.className = `flex items-center gap-3 bg-card border rounded-xl px-4 py-2.5 shadow-sm ${entry.allDone ? "border-success/50" : "border-border"}`;
+    row.innerHTML = `
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${entry.allDone ? "bg-success/10" : "bg-secondary"}">
+        <i data-lucide="${entry.allDone ? "check-circle-2" : "circle-dashed"}" class="w-4.5 h-4.5 ${entry.allDone ? "text-success" : "text-muted-foreground"}"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold truncate">${formatHistoryDate(entry.date)}</p>
+        <p class="text-xs text-muted-foreground font-mono">${entry.loggedMinutes}/${entry.totalTargetMinutes} min · ${entry.customDone}/${entry.customTotal} custom</p>
+      </div>
+      <span class="text-sm font-mono font-bold ${entry.allDone ? "text-success" : "text-primary"} shrink-0">${entry.pct}%</span>
+    `;
+    historyList.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+  if (!confirm(`Clear all saved history for GATE ${currentExam}? This cannot be undone.`)) return;
+  localStorage.removeItem(historyKey(currentExam));
+  renderHistory();
+  updateHistoryPreviewLabel();
+});
+
+/* ---------------------------------------------------------
+   HISTORY MODAL open/close + preview label
+--------------------------------------------------------- */
+const historyModal = document.getElementById("historyModal");
+
+function openHistoryModal() {
+  document.getElementById("historyModalTitle").textContent = `Daily History — GATE ${currentExam}`;
+  renderHistory();
+  historyModal.classList.remove("hidden");
+  historyModal.classList.add("flex");
+  lucide.createIcons();
+}
+
+function closeHistoryModal() {
+  historyModal.classList.add("hidden");
+  historyModal.classList.remove("flex");
+}
+
+document.getElementById("openHistoryBtn").addEventListener("click", openHistoryModal);
+document.getElementById("closeHistoryBtn").addEventListener("click", closeHistoryModal);
+historyModal.addEventListener("click", (e) => { if (e.target === historyModal) closeHistoryModal(); });
+
+function updateHistoryPreviewLabel() {
+  const history = loadHistory(currentExam);
+  const label = document.getElementById("historyPreviewLabel");
+  if (!label) return;
+  label.textContent = history.length === 0
+    ? "See your past tracked days"
+    : `${history.length} day${history.length === 1 ? "" : "s"} recorded`;
+}
+
+/* =========================================================
+   STATS / DAILY PROGRESS
+========================================================= */
+function computeDailyProgress() {
+  const totalTargetMinutes = CORE_TASK_DEFS.reduce((s, t) => s + getTarget(t.id), 0);
+  const loggedMinutes = CORE_TASK_DEFS.reduce((s, t) => s + Math.min(dailyState.core[t.id].minutes, getTarget(t.id)), 0);
+  const coreFraction = totalTargetMinutes ? (loggedMinutes / totalTargetMinutes) : 0;
+
+  const customTotal = dailyState.custom.length;
+  const customDone = dailyState.custom.filter(t => t.done).length;
+  const customFraction = customTotal ? (customDone / customTotal) : null;
+
+  let overallFraction;
+  if (customFraction === null) {
+    overallFraction = coreFraction;
+  } else {
+    const coreCount = CORE_TASK_DEFS.length;
+    overallFraction = ((coreFraction * coreCount) + (customFraction * customTotal)) / (coreCount + customTotal);
+  }
+
+  const totalTasks = CORE_TASK_DEFS.length + customTotal;
+  const allCoreDone = CORE_TASK_DEFS.every(t => dailyState.core[t.id].minutes >= getTarget(t.id));
+  const allCustomDone = dailyState.custom.every(t => t.done);
+  const allDone = allCoreDone && allCustomDone && totalTasks > 0;
+
+  return { pct: Math.round(overallFraction * 100), totalTasks, allDone };
+}
+
+function updateStats() {
+  const { pct, totalTasks, allDone } = computeDailyProgress();
+  document.getElementById("statTotal").textContent = totalTasks;
+  document.getElementById("statProgress").textContent = pct + "%";
+  document.getElementById("statStreak").textContent = dailyState.streak;
+  document.getElementById("barPercent").textContent = pct + "%";
+  document.getElementById("barFill").style.width = pct + "%";
+
+  if (allDone) {
+    const today = todayStrIST();
+    if (dailyState.lastCompletedDate !== today) {
+      dailyState.streak += 1;
+      dailyState.lastCompletedDate = today;
+      saveDailyState(currentExam, dailyState);
+      document.getElementById("statStreak").textContent = dailyState.streak;
+      showMotivationalQuote();
+    }
+  }
+}
+
+/* =========================================================
+   RESET DAY (keeps streak history intact)
+========================================================= */
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("Reset all of today's logged times and custom tasks? Your streak history and subject syllabus progress will be kept.")) return;
+  CORE_TASK_DEFS.forEach(t => { dailyState.core[t.id] = { minutes: 0 }; });
+  dailyState.custom.forEach(t => t.done = false);
+  dailyState.lastResetAt = new Date().toLocaleString();
+  saveDailyState(currentExam, dailyState);
+  renderCoreTasks();
+  renderCustomTasks();
+  updateStats();
+  updateLastResetNote();
+});
+
+function updateLastResetNote() {
+  const note = document.getElementById("lastResetNote");
+  note.textContent = dailyState.lastResetAt ? `Last reset: ${dailyState.lastResetAt}` : "";
+}
+
+/* =========================================================
+   EXAM SWITCHING
+========================================================= */
+function switchExam(exam) {
+  currentExam = exam;
+  dailyState = loadDailyState(exam);
+  dailyState = archiveDayIfRolledOver(exam, dailyState);
+  subjectState = loadSubjectState(exam);
+  targetState = loadTargets(exam);
+
+  document.querySelectorAll(".exam-tab").forEach(btn => {
+    const active = btn.getAttribute("data-exam") === exam;
+    btn.className = `exam-tab flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+      active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary"
+    }`;
+  });
+
+  renderCoreTasks();
+  renderCustomTasks();
+  renderSubjects();
+  updateHistoryPreviewLabel();
+  updateStats();
+  updateLastResetNote();
+}
+
+document.querySelectorAll(".exam-tab").forEach(btn => {
+  btn.addEventListener("click", () => switchExam(btn.getAttribute("data-exam")));
+});
+
+/* =========================================================
+   THEME
+========================================================= */
+function setThemeIcon() {
+  const isDark = document.documentElement.classList.contains("dark");
+  const iconEl = document.getElementById("themeIcon");
+  if (!iconEl) return;
+  // Show a SUN when in dark mode (tap to switch to light), a MOON when in light mode (tap to switch to dark)
+  iconEl.setAttribute("data-lucide", isDark ? "sun" : "moon");
+  lucide.createIcons();
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.classList.contains("dark");
+  if (isDark) {
+    html.classList.remove("dark");
+    localStorage.setItem("gateTrackerTheme", "light");
+  } else {
+    html.classList.add("dark");
+    localStorage.setItem("gateTrackerTheme", "dark");
+  }
+  setThemeIcon();
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem("gateTrackerTheme");
+  if (saved === "dark") document.documentElement.classList.add("dark");
+  else if (saved === "light") document.documentElement.classList.remove("dark");
+  else if (window.matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.classList.add("dark");
+  setThemeIcon();
+}
+
+document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+
+/* =========================================================
+   INIT
+========================================================= */
+function updateLiveClockAndDate() {
+  const now = new Date();
+
+  const dateStr = now.toLocaleDateString("en-IN", {
+    timeZone: IST_TIMEZONE,
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  });
+  const timeStr = now.toLocaleTimeString("en-IN", {
+    timeZone: IST_TIMEZONE,
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true
+  });
+
+  const dateEl = document.getElementById("todayDate");
+  if (dateEl) dateEl.textContent = dateStr;
+
+  const clockEl = document.getElementById("liveClock");
+  if (clockEl) clockEl.textContent = timeStr;
+
+  const clockElMobile = document.getElementById("liveClockMobile");
+  if (clockElMobile) clockElMobile.textContent = timeStr;
+}
+
+// Used for streak / daily-reset date comparisons too, so "today" always means an IST calendar day
+function todayStrIST() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: IST_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(now);
+  const y = parts.find(p => p.type === "year").value;
+  const m = parts.find(p => p.type === "month").value;
+  const d = parts.find(p => p.type === "day").value;
+  return `${y}-${m}-${d}`;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadTheme();
+  updateLiveClockAndDate();
+  setInterval(updateLiveClockAndDate, 1000);
+  switchExam("CS");
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>
